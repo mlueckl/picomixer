@@ -7,4 +7,4 @@ A Volume Controller to manage *Windows Volume Mixer*
 - 3D Printed Case (based on https://www.thingiverse.com/thing:4802568, remixed to fit Pico)
 
 ### Software
-- https://www.midi-mixer.com/ - Map Encoder functions and which Software to control (Download Profile: midi-mixer://share/d8f3c3ff3a37b34606b98ce6cd447454)
+- https://www.midi-mixer.com/ - Map Encoder functions and which Software to control (Download Profile: https://midi-mixer://share/d8f3c3ff3a37b34606b98ce6cd447454)
