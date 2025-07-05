@@ -58,9 +58,7 @@ def setup_io():
         encoder = rotaryio.IncrementalEncoder(pin_a, pin_b)
         encoders.append(encoder)
     
-    # Initialize MIDI encoder positions to middle value
-    for encoder in encoders[1:]:
-        encoder.position = 63  # Middle of MIDI range (0-127)
+    # No need to initialize positions - we're using relative mode
     
     return keys, encoders
 
@@ -68,21 +66,29 @@ def handle_encoder(index, encoder, state_change):
     """Handle encoder rotation for volume control"""
     if index == 0:
         # System volume - use HID consumer control
-        print(f'Encoder 0 (System): {"UP" if state_change > 0 else "DOWN"} by {abs(state_change)}')
+        # Multiply by 2 for slightly faster volume changes (4% per click on Windows)
+        volume_steps = state_change * 2
+        print(f'Encoder 0 (System): {"UP" if state_change > 0 else "DOWN"} by {abs(volume_steps)} steps')
+        
         if state_change > 0:
-            for _ in range(state_change):
+            for _ in range(volume_steps):
                 cc.send(ConsumerControlCode.VOLUME_INCREMENT)
         else:
-            for _ in range(abs(state_change)):
+            for _ in range(abs(volume_steps)):
                 cc.send(ConsumerControlCode.VOLUME_DECREMENT)
     else:
-        # MIDI channels 1-4 for custom controls
-        new_position = encoder.position
-        midi_value = max(0, min(127, new_position))  # Clamp to MIDI range
-        
-        # Send volume control change on appropriate MIDI channel
-        midi.send(ControlChange(VOLUME_CC, midi_value), channel=index-1)
-        print(f'Encoder {index}: Volume = {midi_value} (change: {state_change})')
+        # MIDI channels 1-4 - send relative changes
+        # For infinite encoders, send increment (127) or decrement (0) signals
+        if state_change > 0:
+            # Send increment signal for each step
+            for _ in range(state_change):
+                midi.send(ControlChange(VOLUME_CC, 127), channel=index-1)
+                print(f'Encoder {index}: Increment (channel {index-1})')
+        elif state_change < 0:
+            # Send decrement signal for each step
+            for _ in range(abs(state_change)):
+                midi.send(ControlChange(VOLUME_CC, 0), channel=index-1)
+                print(f'Encoder {index}: Decrement (channel {index-1})')
 
 def handle_button_press(index, mute_states, pico_w):
     """Handle button press for mute toggle"""
